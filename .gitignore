@@ -1,0 +1,12 @@
+.ipynb_checkpoints
+*-save.ipynb
+*-errors.ipynb
+*-executed.ipynb
+**/notebooks/*.csv
+new-notebook.ipynb
+metadata.txt
+_packages
+*.pyc
+.DS_Store
+data/csv
+data/north-america-latest.osm.pbf 
