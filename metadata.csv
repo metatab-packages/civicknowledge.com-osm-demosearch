@@ -14,26 +14,28 @@ Version.Major,1
 Version.Minor,1
 Version.Patch,1
 Created,2021-01-28T19:10:48
-Modified,2021-01-29T00:14:05
-Giturl,https://github.com/CivicKnowledge/radius-search.git
-""
+Modified,2021-01-31T04:28:56
+Giturl,https://github.com/metatab-packages/civicknowledge.com-osm-demosearch.git
+
 Section,Contacts,Email,Organization,Url
 Wrangler,Eric Busboom,eric@civicknowledge.com,Civic Knowledge,http://civicknowledge.com
-""
+
 Section,Documentation,Title,Description,
 Documentation,file:README.md,README,,
-""
+
 Section,References,Name,Description,
-Reference,https://download.geofabrik.de/'north-america-latest.osm.pbf,north-america-latest,OSM North America extract,
+Reference,index:civicknowledge.com-geohash-us#us_geohashes,us_geohashes,All 4 digit geohases in the continential US,
+Reference,https://download.geofabrik.de/north-america-latest.osm.pbf,north-america-latest,OSM North America extract,
 Reference,data/csv/points.csv,points,Points from the OSM file,
 Reference,data/csv/lines.csv,lines,Lines from the OSM file,
 Reference,data/csv/multipolygons.csv,multipolygons,Polygons from the OSM file,
 Reference,data/csv/multilinestrings.csv,multilinestrings,Lines from the OSM file,
 Reference,data/csv/other_relations.csv,other_relations,Other geo data from the OSM file,
-""
+
 Section,Resources,Name,Description,
 Datafile,notebooks/ExtractPoints.ipynb#geohash_tags,geohash_tags,Points converted to counts of tags per geohash,
-""
+
+
 Section,Schema,DataType,AltName,Description,Has_Codes
 Table,geohash_tags,,,,
 Table.Column,geohash,string,,,

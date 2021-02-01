@@ -10,3 +10,4 @@ _packages
 .DS_Store
 data/csv
 data/north-america-latest.osm.pbf 
+data/cache
