@@ -1,7 +1,19 @@
 # Task definitions for invoke
 # You must first install invoke, https://www.pyinvoke.org/
 
+
+
+import sys
 from pathlib import Path
+import metapack as mp
+
+from metapack.appurl import SearchUrl
+SearchUrl.initialize()  # This makes the 'index:" urls work
+
+sys.path.append(str(Path(__file__).parent.resolve()))
+
+import pylib
+
 
 pbf_file = 'north-america-latest.osm.pbf'
 pbf_url = f'https://download.geofabrik.de/{pbf_file}'
@@ -9,7 +21,7 @@ pbf_url = f'https://download.geofabrik.de/{pbf_file}'
 # You can also create you own tasks
 from invoke import task
 
-from metapack_build.tasks.package import ns
+from metapack_build.tasks.package import ns, build as mp_build
 
 # To configure options for invoke functions you can:
 # - Set values in the 'invoke' section of `~/.metapack.yaml
@@ -49,6 +61,10 @@ def convert_pbf(c):
     p = Path.cwd().joinpath('data',pbf_file)
     out_dir = p.parent.joinpath('csv')
     
+    if out_dir.joinpath('lines.csv').exists():
+        print("PBF file is already converted")
+        return
+    
     if not p.exists():
         print("ERROR: Download https://download.geofabrik.de/north-america-latest.osm.pbf and put it in the data directory"
               " or run `invoke get_pbf`")
@@ -64,3 +80,68 @@ def convert_pbf(c):
 
 
 ns.add_task(convert_pbf)
+
+@task
+def create_roads_files(c):
+    """Build the residential_roads.csv and nonres_roads.csv files"""
+    cache_dir = str(Path(__file__).parent.resolve())
+    print(f"Cache: {cache_dir}")
+    
+    pkg = mp.open_package(cache_dir)
+    
+    cache = pylib.open_cache(pkg)
+
+    print('-- Convert PBF file')
+    convert_pbf(c)
+
+    print('-- Split the input file')
+    splits = pylib.split_data(pkg, cache)
+    print(f'   {len(splits)} splits keys')
+    
+    print('-- Run the overlay process')
+    recombine_keys = pylib.run_overlay(splits, cache)
+    print(f'   {len(recombine_keys)} recombine keys')
+    
+    print('-- Simplify lines')
+    simplified_keys = pylib.simplify_lines(cache, recombine_keys)
+    print(f'   {len(simplified_keys)} simplified keys')
+    
+    print('-- Write the roads files')
+    pylib.write_files(pkg, simplified_keys)
+    
+ns.add_task(create_roads_files)
+
+@task
+def create_points_files(c):
+    """Build the geohash_tags.csv file"""
+    cache_dir = str(Path(__file__).parent.resolve())
+    print(f"Cache: {cache_dir}")
+    
+    pkg = mp.open_package(cache_dir)
+    
+    cache = pylib.open_cache(pkg)
+
+    print('-- Convert PBF file')
+    convert_pbf(c)
+    
+    print('-- Make tags dataframe')
+    tags_df = pylib.make_tags_df(pkg)
+    
+    print('-- Extract class Columns')
+    cls_df = pylib.extract_class_columns(tags_df)
+    
+    print('-- Make geotags dataframe')
+    ght = pylib.make_geotags_df(pkg, tags_df, cls_df)
+    
+ns.add_task(create_points_files)
+
+@task( optional=['force'])
+def build(c, force=None):
+    """Build a filesystem package."""
+
+    create_roads_files(c)
+    create_points_files(c)
+    mp_build(c, force)
+
+    
+ns.add_task(build)
