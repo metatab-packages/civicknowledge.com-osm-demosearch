@@ -3,3 +3,4 @@ libgeohash
 shapely
 tqdm
 utm
+demosearch
