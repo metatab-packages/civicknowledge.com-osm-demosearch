@@ -11,3 +11,4 @@ _packages
 data/csv
 data/north-america-latest.osm.pbf 
 data/cache
+data/*.csv
