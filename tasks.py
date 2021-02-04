@@ -6,8 +6,10 @@
 import sys
 from pathlib import Path
 import metapack as mp
-
+from invoke import task
+from metapack_build.tasks.package import ns, build as mp_build
 from metapack.appurl import SearchUrl
+
 SearchUrl.initialize()  # This makes the 'index:" urls work
 
 sys.path.append(str(Path(__file__).parent.resolve()))
@@ -19,9 +21,7 @@ pbf_file = 'north-america-latest.osm.pbf'
 pbf_url = f'https://download.geofabrik.de/{pbf_file}'
 
 # You can also create you own tasks
-from invoke import task
 
-from metapack_build.tasks.package import ns, build as mp_build
 
 # To configure options for invoke functions you can:
 # - Set values in the 'invoke' section of `~/.metapack.yaml
@@ -114,10 +114,11 @@ ns.add_task(create_roads_files)
 @task
 def create_points_files(c):
     """Build the geohash_tags.csv file"""
-    cache_dir = str(Path(__file__).parent.resolve())
-    print(f"Cache: {cache_dir}")
     
-    pkg = mp.open_package(cache_dir)
+    pkg_dir = str(Path(__file__).parent.resolve())
+    print(f"Pkg dir: {pkg_dir}")
+    
+    pkg = mp.open_package(pkg_dir)
     
     cache = pylib.open_cache(pkg)
 
