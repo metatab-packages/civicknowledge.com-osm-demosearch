@@ -17,6 +17,10 @@ from pathlib import Path
 from demosearch.util import run_mp
 from .lines import open_cache
 
+import logging
+
+points_logger = logging.getLogger(__name__)
+
 extract_tags = ['amenity', 'tourism', 'shop', 'leisure', 'natural', 'parking']
 
 
@@ -87,9 +91,6 @@ def make_tags_df(pkg):
     return tags_df
 
 
-
-
-
 def extract_class_columns(tags_df):
     tags_df['class'] = tags_df.loc[:, ('amenity', 'tourism', 'shop', 'leisure', 'natural', 'parking')].fillna(
         method='ffill', axis=1).fillna(method='bfill', axis=1).iloc[:, 0]
@@ -127,6 +128,17 @@ def make_geotags_df(pkg, tags_df, cls_df):
 
     geohash_tags = gpd.GeoDataFrame(t, geometry='geometry', crs=4326).reset_index()
 
-    geohash_tags.to_csv(pkg_root.joinpath('data', 'residential_roads.csv'))
+    geohash_tags.to_csv(pkg_root.joinpath('data', 'geohash_tags.csv'), index=False)
 
     return geohash_tags
+
+
+def build_points(pkg):
+    points_logger.info('Make tags dataframe')
+    tags_df = make_tags_df(pkg)
+
+    points_logger.info('Extract class Columns')
+    cls_df = extract_class_columns(tags_df)
+
+    points_logger.info('Make geotags dataframe')
+    make_geotags_df(pkg, tags_df, cls_df)

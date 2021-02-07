@@ -16,6 +16,9 @@ from tqdm.notebook import tqdm
 
 tqdm.pandas()
 
+import logging
+
+lines_logger = logging.getLogger(__name__)
 
 class LPError(Exception):
     pass
@@ -32,6 +35,10 @@ hw_type = {
 }
 
 
+def get_cache(pkg):
+    return FileCache(Path(pkg.path).parent.joinpath('data', 'cache'))
+
+
 # Process each of the separate files, then
 # write them back out for later recombination
 def open_cache(pkg):
@@ -44,6 +51,8 @@ def open_cache(pkg):
         cache.put_df('hashes', hashes)
 
     return cache
+
+
 #
 # Write out the lines files into chunks so we can run it in multiple
 # processes
@@ -75,7 +84,9 @@ def estimate_lines(fp):
             ln += 1
 
 
-def split_data(pkg, cache, limit=None):
+def split_lines(pkg, limit=None):
+    cache = get_cache(pkg)
+
     try:
         # Returned the cached keys if this is already done
         return cache.get('splits/splits_keys')
@@ -147,7 +158,9 @@ def f_run_overlay(cache_dir, key, okey):
     return okey
 
 
-def run_overlay(splits, cache, force=False):
+def run_overlay(pkg, splits, force=False):
+    cache = get_cache(pkg)
+
     if not force:
         try:
             # Returned the cached keys if this is already done
@@ -166,6 +179,7 @@ def run_overlay(splits, cache, force=False):
     cache.put('recombine/recombine_keys', recombine_keys)
 
     return list(filter(bool, recombine_keys))
+
 
 def f_simplify_lines(cache_dir, key):
     cache = FileCache(cache_dir)
@@ -198,7 +212,10 @@ def f_simplify_lines(cache_dir, key):
 
     return okeys
 
-def simplify_lines(cache, recombine_keys):
+
+def simplify_lines(pkg, recombine_keys):
+    cache = get_cache(pkg)
+
     try:
         # Returned the cached keys if this is already done
         return cache.get('simplified/simplified_keys')
@@ -214,9 +231,9 @@ def simplify_lines(cache, recombine_keys):
 
     return simplified_keys
 
+
 def write_files(pkg, simplified_keys):
     pkg_root = Path(pkg.path).parent
-
     cache = FileCache(pkg_root.joinpath('data', 'cache'))
 
     t = pd.concat([cache.get_df(e) for e in simplified_keys])
@@ -224,9 +241,28 @@ def write_files(pkg, simplified_keys):
     residential_roads = t[t.highway == 'r']
     nonres_roads = t[t.highway != 'r']
 
-    residential_roads.to_csv(pkg_root.joinpath('data', 'residential_roads.csv'))
-    nonres_roads.to_csv(pkg_root.joinpath('data', 'nonres_roads.csv'))
+    residential_roads.to_csv(pkg_root.joinpath('data', 'residential_roads.csv'), index=False)
+    nonres_roads.to_csv(pkg_root.joinpath('data', 'nonres_roads.csv'), index=False)
 
+
+def build_lines(pkg):
+
+    cache = open_cache(pkg)
+
+    lines_logger.info('Split the input file')
+    splits = split_lines(pkg, cache)
+    lines_logger.info(f'   {len(splits)} splits keys')
+
+    lines_logger.info('Run the overlay process')
+    recombine_keys = run_overlay(pkg, splits, cache)
+    print(f'   {len(recombine_keys)} recombine keys')
+
+    lines_logger.info('Simplify lines')
+    simplified_keys = simplify_lines(pkg, recombine_keys)
+    lines_logger.info(f'   {len(simplified_keys)} simplified keys')
+
+    lines_logger.info('Write the roads files')
+    write_files(pkg, simplified_keys)
 
 def geohash_aggregate(recombine_keys):
     """Break lines into segments, assign them to 7 digit geohashes by the location
@@ -268,3 +304,4 @@ def geohash_aggregate(recombine_keys):
     t = t.groupby(['geohash', 'road_type']).sum().reset_index()
     residential_hash = t[t.road_type == 'r']
     nonres_hash = t[t.road_type != 'r']
+

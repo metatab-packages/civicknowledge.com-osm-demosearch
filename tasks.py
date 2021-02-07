@@ -16,6 +16,12 @@ sys.path.append(str(Path(__file__).parent.resolve()))
 
 import pylib
 
+import logging
+from pylib import lines_logger, points_logger
+
+logging.basicConfig()
+lines_logger.setLevel(logging.INFO)
+points_logger.setLevel(logging.INFO)
 
 pbf_file = 'north-america-latest.osm.pbf'
 pbf_url = f'https://download.geofabrik.de/{pbf_file}'
@@ -43,7 +49,13 @@ pbf_url = f'https://download.geofabrik.de/{pbf_file}'
 
 @task
 def get_pbf(c):
-    if not Path.cwd().joinpath('data',pbf_file).exists():
+
+    dd = Path.cwd().joinpath('data')
+
+    if not dd.exists():
+        dd.mkdir(parents=True )
+
+    if not dd.joinpath(pbf_file).exists():
         c.run(f'curl --progress-bar -o data/{pbf_file} {pbf_url}')
     else:
         print(f'File data/{pbf_file} already exists')
@@ -74,10 +86,8 @@ def convert_pbf(c):
     if out_dir.exists():
         print(f"ERROR: output dir {out_dir} should not exist")
         sys.exit(1)
-        
-   
-    op.convert_pbf(p, out_dir)
 
+    op.convert_pbf(p, out_dir)
 
 ns.add_task(convert_pbf)
 
@@ -85,29 +95,15 @@ ns.add_task(convert_pbf)
 def create_roads_files(c):
     """Build the residential_roads.csv and nonres_roads.csv files"""
     cache_dir = str(Path(__file__).parent.resolve())
-    print(f"Cache: {cache_dir}")
+    lines_logger.info(f"Cache: {cache_dir}")
     
     pkg = mp.open_package(cache_dir)
-    
-    cache = pylib.open_cache(pkg)
 
-    print('-- Convert PBF file')
+    lines_logger.info('-- Convert PBF file')
     convert_pbf(c)
 
-    print('-- Split the input file')
-    splits = pylib.split_data(pkg, cache)
-    print(f'   {len(splits)} splits keys')
-    
-    print('-- Run the overlay process')
-    recombine_keys = pylib.run_overlay(splits, cache)
-    print(f'   {len(recombine_keys)} recombine keys')
-    
-    print('-- Simplify lines')
-    simplified_keys = pylib.simplify_lines(cache, recombine_keys)
-    print(f'   {len(simplified_keys)} simplified keys')
-    
-    print('-- Write the roads files')
-    pylib.write_files(pkg, simplified_keys)
+    pylib.build_lines(pkg)
+
     
 ns.add_task(create_roads_files)
 
@@ -116,23 +112,13 @@ def create_points_files(c):
     """Build the geohash_tags.csv file"""
     
     pkg_dir = str(Path(__file__).parent.resolve())
-    print(f"Pkg dir: {pkg_dir}")
-    
     pkg = mp.open_package(pkg_dir)
-    
-    cache = pylib.open_cache(pkg)
+    points_logger.info(f"Pkg dir: {pkg_dir}")
 
-    print('-- Convert PBF file')
+    points_logger.info('Convert PBF file')
     convert_pbf(c)
     
-    print('-- Make tags dataframe')
-    tags_df = pylib.make_tags_df(pkg)
-    
-    print('-- Extract class Columns')
-    cls_df = pylib.extract_class_columns(tags_df)
-    
-    print('-- Make geotags dataframe')
-    ght = pylib.make_geotags_df(pkg, tags_df, cls_df)
+    pylib.build_points(pkg)
     
 ns.add_task(create_points_files)
 
