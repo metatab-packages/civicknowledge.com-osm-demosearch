@@ -13,6 +13,7 @@ from demosearch import FileCache
 from demosearch.util import run_mp
 from shapely.wkt import loads as loads_wkt
 from tqdm.notebook import tqdm
+import appnope
 
 tqdm.pandas()
 
@@ -49,6 +50,10 @@ def open_cache(pkg):
     if not cache.exists('hashes'):
         hashes = pkg.reference('us_geohashes').geoframe()
         cache.put_df('hashes', hashes)
+
+    if not cache.exists('utm_grid'):
+        utm_grid = pkg.reference('utm_grid').geoframe()
+        cache.put_df('utm_grid', utm_grid)
 
     return cache
 
@@ -102,7 +107,6 @@ def split_lines(pkg, limit=None):
         cache.config['lines_file_size'] = approx_lines
 
     chunksize = 10000
-    approx_lines = 53065618  # via wc
     total = int(approx_lines / chunksize)
 
     splits = []
@@ -133,7 +137,7 @@ def f_run_overlay(cache_dir, key, okey):
 
     t = cache.get_df(key)
 
-    hashes = cache.get_df('hashes')
+    utm = cache.get_df('utm_grid')
 
     t = t[t.highway.isin(list(hw_type.keys()))]
     t['highway'] = t.highway.replace(hw_type)  # Cuts file size by 100M
@@ -144,8 +148,8 @@ def f_run_overlay(cache_dir, key, okey):
 
     gdf = gpd.GeoDataFrame(t, crs=4326)
     try:
-        t = gpd.overlay(gdf, hashes)
-        t = t[['osm_id', 'geohash', 'utm_epsg', 'utm_area', 'highway', 'geometry']]
+        t = gpd.overlay(gdf, utm)
+
         try:
             cache.put_df(okey, t)
         except:
@@ -154,7 +158,7 @@ def f_run_overlay(cache_dir, key, okey):
                 raise
     except IndexError as e:
 
-        raise LPError(f"Failed for {key} gdf:{len(gdf)} hashes:{len(hashes)}: {e}")
+        raise LPError(f"Failed for {key} gdf:{len(gdf)} hashes:{len(utm)}: {e}")
     return okey
 
 
@@ -196,13 +200,14 @@ def f_simplify_lines(cache_dir, key):
 
     okeys = []
 
-    for idx, g in df.groupby('utm_epsg'):
+    for idx, g in df.groupby('epsg'):
         _, fn = key.split('/')
         okey = f'simplified/{idx}/{fn}'
 
         if not cache.exists(okey):
             geometry = g.to_crs(epsg=idx).geometry \
                 .simplify(20, False) \
+                .to_crs(4326) \
                 .apply(lambda e: shapely.wkt.dumps(e, rounding_precision=0))
             g = pd.DataFrame(g).assign(geometry=geometry)
 
@@ -237,71 +242,32 @@ def write_files(pkg, simplified_keys):
     cache = FileCache(pkg_root.joinpath('data', 'cache'))
 
     t = pd.concat([cache.get_df(e) for e in simplified_keys])
-    t = t[['geohash', 'highway', 'geometry']]
+    t = t[['zone', 'epsg', 'us_state','cus_state', 'highway', 'geometry']]
     residential_roads = t[t.highway == 'r']
     nonres_roads = t[t.highway != 'r']
 
     residential_roads.to_csv(pkg_root.joinpath('data', 'residential_roads.csv'), index=False)
     nonres_roads.to_csv(pkg_root.joinpath('data', 'nonres_roads.csv'), index=False)
 
-
 def build_lines(pkg):
 
     cache = open_cache(pkg)
 
-    lines_logger.info('Split the input file')
-    splits = split_lines(pkg, cache)
-    lines_logger.info(f'   {len(splits)} splits keys')
+    with appnope.nope_scope(): # Turn off AppNap on Macs
+        lines_logger.info('Split the input file')
+        splits = split_lines(pkg)
+        lines_logger.info(f'   {len(splits)} splits keys')
 
-    lines_logger.info('Run the overlay process')
-    recombine_keys = run_overlay(pkg, splits, cache)
-    print(f'   {len(recombine_keys)} recombine keys')
+        lines_logger.info('Run the overlay process')
+        recombine_keys = run_overlay(pkg, splits, cache)
+        print(f'   {len(recombine_keys)} recombine keys')
 
-    lines_logger.info('Simplify lines')
-    simplified_keys = simplify_lines(pkg, recombine_keys)
-    lines_logger.info(f'   {len(simplified_keys)} simplified keys')
+        if False:
+            lines_logger.info('Simplify lines')
+            simplified_keys = simplify_lines(pkg, recombine_keys)
+            lines_logger.info(f'   {len(simplified_keys)} simplified keys')
+        else:
+            simplified_keys = recombine_keys
 
-    lines_logger.info('Write the roads files')
-    write_files(pkg, simplified_keys)
-
-def geohash_aggregate(recombine_keys):
-    """Break lines into segments, assign them to 7 digit geohashes by the location
-    of one end, and aggreate"""
-
-    def _f(key):
-        df = cache.get_df(key)
-        okeys = []
-        errs = []
-        rows = []
-        for idx, g in df.groupby('utm_epsg'):
-            _, fn = key.split('/')
-            okey = f'lengths/{idx}/{fn}'
-
-            tr = Transformer.from_crs(idx, 4326)  # Transform back to lat/lon for geohash encoding
-
-            for gidx, r in g.to_crs(epsg=idx).iterrows():
-                try:
-                    a = np.array(r.geometry)
-
-                    for l, p in zip(np.linalg.norm(a[:-1] - a[1:], 2, 1), a[:-1]):  # compute the length of each segment
-                        lon, lat = tr.transform(*p)
-                        geohash = gh.encode(lat, lon, 7)
-                        rows.append([geohash, r.highway, int(l)])
-                except TypeError:
-                    pass
-
-            t = pd.DataFrame(rows, columns='geohash road_type len'.split())
-            t = t.groupby(['geohash', 'road_type']).sum().reset_index()
-
-            cache.put_df(okey, t)
-            okeys.append(okey)
-
-        return okeys
-
-    epsg_keys = run_mp(_f, [(e,) for e in recombine_keys], desc='Split By Geohash')
-
-    t = pd.concat([cache.get_df(e) for e in list(chain(*epsg_keys))])
-    t = t.groupby(['geohash', 'road_type']).sum().reset_index()
-    residential_hash = t[t.road_type == 'r']
-    nonres_hash = t[t.road_type != 'r']
-
+        lines_logger.info('Write the roads files')
+        write_files(pkg, simplified_keys)
