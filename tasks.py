@@ -2,7 +2,7 @@
 # You must first install invoke, https://www.pyinvoke.org/
 
 
-
+import fiona # Avoids a bizzare error: AttributeError: module 'fiona' has no attribute '_loading'
 import sys
 from pathlib import Path
 import metapack as mp
@@ -122,12 +122,36 @@ def create_points_files(c):
     
 ns.add_task(create_points_files)
 
+@task
+def build_osm_blocks(c):
+    """Build blocks geo file and assign OSM points to blocks"""
+    pkg_dir = str(Path(__file__).parent.resolve())
+    pkg = mp.open_package(pkg_dir)
+    points_logger.info(f"Pkg dir: {pkg_dir}")
+
+    pylib.build_osm_points(pkg)
+ns.add_task(build_osm_blocks)
+
+
+@task
+def build_block_maps(c):
+
+    pkg_dir = str(Path(__file__).parent.resolve())
+    pkg = mp.open_package(pkg_dir)
+    points_logger.info(f"Pkg dir: {pkg_dir}")
+
+    pylib.build_block_maps(pkg)
+ns.add_task(build_block_maps)
+
 @task( optional=['force'])
 def build(c, force=None):
     """Build a filesystem package."""
 
     create_roads_files(c)
     create_points_files(c)
+    build_osm_blocks(c)
+    build_block_maps(c)
+
     mp_build(c, force)
 
     

@@ -43,9 +43,8 @@ def get_cache(pkg):
 # Process each of the separate files, then
 # write them back out for later recombination
 def open_cache(pkg):
-    pkg_root = Path(pkg.path).parent
 
-    cache = FileCache(pkg_root.joinpath('data', 'cache'))
+    cache = get_cache(pkg)
 
     if not cache.exists('hashes'):
         hashes = pkg.reference('us_geohashes').geoframe()
