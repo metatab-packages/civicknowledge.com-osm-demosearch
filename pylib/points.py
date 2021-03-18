@@ -21,10 +21,10 @@ import logging
 
 points_logger = logging.getLogger(__name__)
 
-extract_tags = ['amenity', 'tourism', 'shop', 'leisure', 'natural', 'parking']
+extract_tag_names = ['amenity', 'tourism', 'shop', 'leisure', 'natural', 'parking']
 
 
-def _extract_tags(df, extract_tags):
+def extract_tags(df, extract_tags):
     from sqlalchemy.dialects.postgresql import HSTORE
 
     h = HSTORE()
@@ -64,13 +64,13 @@ def make_tags_df(pkg):
 
         # Split the file and extract tags in multiprocessing
         N_task = 200
-        tasks = [(e, extract_tags) for e in np.array_split(points_df, N_task)]
+        tasks = [(e, extract_tag_names) for e in np.array_split(points_df, N_task)]
 
-        results = run_mp(_extract_tags, tasks, 'Split OSM other_tags')
+        results = run_mp(extract_tags, tasks, 'Split OSM other_tags')
         tags = list(chain(*[e[0] for e in results]))
         errors = list(chain(*[e[1] for e in results]))
 
-        tags_df = pd.DataFrame(tags, columns=['osm_id'] + extract_tags)
+        tags_df = pd.DataFrame(tags, columns=['osm_id'] + extract_tag_names)
 
         # 1/2 the entries, 2.7M are trees and rocks
         tags_df = tags_df[~tags_df.natural.isin(['tree', 'rock'])]
@@ -109,12 +109,11 @@ def extract_class_columns(tags_df):
 
     return cls_df
 
-
 def make_geotags_df(pkg, tags_df, cls_df):
     # At 8 digits, geohashes are, on average 4m by 20M over the US
     # At 6, 146m x 610m
     # At 4, 4Km x 20Km
-    # Clip to 5 because it's really unlikely that there are actually more than 10
+    # Clip to 8 because it's really unlikely that there are actually more than 10
     # amenities in a cell.
 
     pkg_root = Path(pkg.path).parent
@@ -126,9 +125,15 @@ def make_geotags_df(pkg, tags_df, cls_df):
 
     t['geometry'] = [Point(gh.decode(e)[::-1]) for e in t.index]
 
-    geohash_tags = gpd.GeoDataFrame(t, geometry='geometry', crs=4326).reset_index()
+    t = gpd.GeoDataFrame(t, geometry='geometry', crs=4326).reset_index()
 
-    geohash_tags.to_csv(pkg_root.joinpath('data', 'geohash_tags.csv'), index=False)
+    cbsa = pkg.reference('cbsa').geoframe().to_crs(4326)
+    geohash_tags = gpd.sjoin(t, cbsa[['geometry', 'geoid']], how='left')
+
+    cols = ['geohash', 'geoid'] + list(geohash_tags.loc[:, 'amenity':'supermarket'].columns) + ['geometry']
+    geohash_tags = geohash_tags[cols]
+
+    geohash_tags.to_csv(pkg_root.joinpath('data', 'point_tags.csv'), index=False)
 
     return geohash_tags
 
