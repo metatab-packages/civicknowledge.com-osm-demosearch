@@ -17,11 +17,12 @@ sys.path.append(str(Path(__file__).parent.resolve()))
 import pylib
 
 import logging
-from pylib import lines_logger, points_logger
+from pylib import lines_logger, points_logger, cluster_logger
 
 logging.basicConfig()
 lines_logger.setLevel(logging.INFO)
 points_logger.setLevel(logging.INFO)
+cluster_logger.setLevel(logging.INFO)
 
 pbf_file = 'north-america-latest.osm.pbf'
 pbf_url = f'https://download.geofabrik.de/{pbf_file}'
@@ -133,6 +134,8 @@ def build_osm_blocks(c):
 ns.add_task(build_osm_blocks)
 
 
+
+
 @task
 def build_block_maps(c):
 
@@ -142,6 +145,18 @@ def build_block_maps(c):
 
     pylib.build_block_maps(pkg)
 ns.add_task(build_block_maps)
+
+@task
+def build_clusters(c):
+
+    pkg_dir = str(Path(__file__).parent.resolve())
+    pkg = mp.open_package(pkg_dir)
+    points_logger.info(f"Pkg dir: {pkg_dir}")
+
+    pylib.build_clusters(pkg)
+
+ns.add_task(build_clusters)
+
 
 @task( optional=['force'])
 def build(c, force=None):

@@ -5,6 +5,7 @@
 from itertools import chain
 from pathlib import Path
 
+import fiona # Import first to work around an import bug
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -14,6 +15,8 @@ from demosearch.util import run_mp
 from shapely.wkt import loads as loads_wkt
 from tqdm.notebook import tqdm
 import appnope
+
+from .util import get_cache
 
 tqdm.pandas()
 
@@ -36,25 +39,8 @@ hw_type = {
 }
 
 
-def get_cache(pkg):
-    return FileCache(Path(pkg.path).parent.joinpath('data', 'cache'))
-
-
 # Process each of the separate files, then
 # write them back out for later recombination
-def open_cache(pkg):
-
-    cache = get_cache(pkg)
-
-    if not cache.exists('hashes'):
-        hashes = pkg.reference('us_geohashes').geoframe()
-        cache.put_df('hashes', hashes)
-
-    if not cache.exists('utm_grid'):
-        utm_grid = pkg.reference('utm_grid').geoframe()
-        cache.put_df('utm_grid', utm_grid)
-
-    return cache
 
 
 #
@@ -270,3 +256,18 @@ def build_lines(pkg):
 
         lines_logger.info('Write the roads files')
         write_files(pkg, simplified_keys)
+
+
+def open_cache(pkg):
+
+    cache = get_cache(pkg)
+
+    if not cache.exists('hashes'):
+        hashes = pkg.reference('us_geohashes').geoframe()
+        cache.put_df('hashes', hashes)
+
+    if not cache.exists('utm_grid'):
+        utm_grid = pkg.reference('utm_grid').geoframe()
+        cache.put_df('utm_grid', utm_grid)
+
+    return cache

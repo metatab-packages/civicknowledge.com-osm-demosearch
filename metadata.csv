@@ -2,27 +2,27 @@ Declare,metatab-latest
 Title,Open Street Map Extract for Demographic Search
 Description,
 Identifier,bf3fee0b-2e03-44ed-b46d-331e4f4bb9e8
-Name,civicknowledge.com-osm-demosearch-1.2.1
+Name,civicknowledge.com-osm-demosearch-2.1.1
 Dataset,osm
 Origin,civicknowledge.com
 Time,
 Space,
 Grain,
 Variant,demosearch
-Version,1.2.1
-Version.Major,1
-Version.Minor,3
+Version,2.1.1
+Version.Major,2
+Version.Minor,1
 Version.Patch,1
 Created,2021-01-28T19:10:48
-Modified,2021-02-15T17:38:34
+Modified,2021-03-25T22:54:44
 Giturl,https://github.com/metatab-packages/civicknowledge.com-osm-demosearch.git
-
+""
 Section,Contacts,Email,Organization,Url
 Wrangler,Eric Busboom,eric@civicknowledge.com,Civic Knowledge,http://civicknowledge.com
-
+""
 Section,Documentation,Title,Description,
 Documentation,file:README.md,README,,
-
+""
 Section,References,Name,Description,
 Reference,metapack+http://library.metatab.org/civicknowledge.com-geohash-us.csv#us_geohashes,us_geohashes,All 4 digit geohases in the continential US,
 Reference,https://download.geofabrik.de/north-america-latest.osm.pbf,north-america-latest,OSM North America extract,
@@ -32,9 +32,9 @@ Reference,data/csv/lines.csv,lines,Lines from the OSM file,
 Reference,data/csv/multipolygons.csv,multipolygons,Polygons from the OSM file,
 Reference,data/csv/multilinestrings.csv,multilinestrings,Lines from the OSM file,
 Reference,data/csv/other_relations.csv,other_relations,Other geo data from the OSM file,
-Reference,censusgeo://2020/5/{st}/block,block_templ,Block url template
-Reference,censusgeo://2020/5/US/cbsa,cbsa,Metro areas
-,,,
+Reference,censusgeo://2020/5/{st}/block,block_templ,Block url template,
+Reference,censusgeo://2020/5/US/cbsa,cbsa,Metro areas,
+""
 Section,Resources,Name,Description,
 Datafile,data/point_tags.csv,point_tags,Points converted to counts of tags per geohash,
 Datafile,data/residential_roads.csv,residential_roads,Residential roads per 4 digit geohash,
@@ -43,39 +43,11 @@ Datafile,data/block_geo.csv,block_geo,Geographic shapes for blocs in block_osm,
 Datafile,data/block_osm.csv,block_osm,Points from geohash_tags allocated to 2020 census blocks,
 Datafile,data/utm_map.csv,utm_map,Map from census blocks to UTM zones,
 Datafile,data/cbsa_map.csv,cbsa_map,Map from census blocks to CBSA Metros,
-,,,,
+Datafile,data/business_clusters.csv,business_clusters,High density business clusters in CBSAs,
+Datafile,data/metro_points.csv,metro_points,Points grouped into major categories and linked to business clusters.,
 Datafile,notebooks/PointDensity.ipynb#bus_densities,bus_densities,High-density business goehashes,
-
-
-
-
+""
 Section,Schema,DataType,Description,Has_Codes
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
-,,,,
 Table,residential_roads,,,
 Table.Column,zone,string,,
 Table.Column,epsg,integer,,
@@ -94,3 +66,85 @@ Table,bus_densities,,,
 Table.Column,geohash,string,,
 Table.Column,count,number,,
 Table.Column,density,number,,
+Table,point_tags,,,
+Table.Column,geohash,string,,
+Table.Column,geoid,string,,
+Table.Column,amenity,integer,,
+Table.Column,tourism,integer,,
+Table.Column,shop,integer,,
+Table.Column,leisure,integer,,
+Table.Column,natural,integer,,
+Table.Column,parking,integer,,
+Table.Column,bank,integer,,
+Table.Column,bar,integer,,
+Table.Column,bicycle_parking,integer,,
+Table.Column,cafe,integer,,
+Table.Column,clothes,integer,,
+Table.Column,convenience,integer,,
+Table.Column,fast_food,integer,,
+Table.Column,fitness_centre,integer,,
+Table.Column,fuel,integer,,
+Table.Column,grave_yard,integer,,
+Table.Column,hotel,integer,,
+Table.Column,laundry,integer,,
+Table.Column,park,integer,,
+Table.Column,parking_space,integer,,
+Table.Column,playground,integer,,
+Table.Column,restaurant,integer,,
+Table.Column,supermarket,integer,,
+Table.Column,geometry,string,,
+Table,block_geo,,,
+Table.Column,geoid,string,,
+Table.Column,aland,integer,,
+Table.Column,awater,integer,,
+Table.Column,lat,number,,
+Table.Column,lon,number,,
+Table.Column,geometry,string,,
+Table,block_osm,,,
+Table.Column,geoid,string,,
+Table.Column,amenity,integer,,
+Table.Column,tourism,integer,,
+Table.Column,shop,integer,,
+Table.Column,leisure,integer,,
+Table.Column,natural,integer,,
+Table.Column,parking,integer,,
+Table.Column,bank,integer,,
+Table.Column,bar,integer,,
+Table.Column,bicycle_parking,integer,,
+Table.Column,cafe,integer,,
+Table.Column,clothes,integer,,
+Table.Column,convenience,integer,,
+Table.Column,fast_food,integer,,
+Table.Column,fitness_centre,integer,,
+Table.Column,fuel,integer,,
+Table.Column,grave_yard,integer,,
+Table.Column,hotel,integer,,
+Table.Column,laundry,integer,,
+Table.Column,park,integer,,
+Table.Column,parking_space,integer,,
+Table.Column,playground,integer,,
+Table.Column,restaurant,integer,,
+Table.Column,supermarket,integer,,
+Table,utm_map,,,
+Table.Column,geoid,string,,
+Table.Column,band,integer,,
+Table.Column,zone,string,,
+Table.Column,epsg,integer,,
+Table.Column,cus_state,integer,,
+Table,cbsa_map,,,
+Table.Column,cbsa,string,,
+Table.Column,block,string,,
+Table,business_clusters,,,
+Table.Column,cluster_n,integer,,
+Table.Column,geometry,string,,
+Table.Column,cbsa,string,,
+Table,metro_points,,,
+Table.Column,geoid,string,,
+Table.Column,geohash,string,,
+Table.Column,geometry,string,,
+Table.Column,entertain,integer,,
+Table.Column,casual,integer,,
+Table.Column,shop,integer,,
+Table.Column,active,integer,,
+Table.Column,travel,integer,,
+Table.Column,cbsa,string,,

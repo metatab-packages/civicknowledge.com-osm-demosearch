@@ -18,7 +18,8 @@ from itertools import product
 from shapely.wkt import loads
 
 from .points import points_logger
-from .lines import get_cache
+from .util import get_cache
+
 
 def _f_get_split_blocks(st, cache, url):
     k = f'blocks/geo/{st}'
