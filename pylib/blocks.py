@@ -61,7 +61,7 @@ def split_hashed_points(pkg):
 
     cache = get_cache(pkg)
 
-    ght = pkg.resource('geohash_tags').dataframe()
+    ght = pkg.resource('point_tags').dataframe()
 
     break_start = [int(e) for e in np.linspace(0, len(ght) + 1, 10)]
     breaks = list(zip(break_start[:-1], break_start[1:]))

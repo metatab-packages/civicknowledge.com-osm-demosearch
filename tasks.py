@@ -1,7 +1,6 @@
 # Task definitions for invoke
 # You must first install invoke, https://www.pyinvoke.org/
 
-
 import fiona # Avoids a bizzare error: AttributeError: module 'fiona' has no attribute '_loading'
 import sys
 from pathlib import Path
@@ -11,13 +10,16 @@ from metapack_build.tasks.package import ns, build as mp_build
 from metapack.appurl import SearchUrl
 
 SearchUrl.initialize()  # This makes the 'index:" urls work
-
 sys.path.append(str(Path(__file__).parent.resolve()))
 
 import pylib
+import importlib
+importlib.reload(pylib) # Because when using a collection with invoke, may already have been loaded
 
 import logging
 from pylib import lines_logger, points_logger, cluster_logger
+
+sys.path.pop() # Other other datasets wont get this pylib
 
 logging.basicConfig()
 lines_logger.setLevel(logging.INFO)
@@ -75,11 +77,10 @@ def convert_pbf(c):
     out_dir = p.parent.joinpath('csv')
     
     if out_dir.joinpath('lines.csv').exists():
-        print("PBF file is already converted")
         return
     
     if not p.exists():
-        print("ERROR: Download https://download.geofabrik.de/north-america-latest.osm.pbf and put it in the data directory"
+        points_logger.error("ERROR: Download https://download.geofabrik.de/north-america-latest.osm.pbf and put it in the data directory"
               " or run `invoke get_pbf`")
         
         sys.exit(1)
@@ -88,6 +89,7 @@ def convert_pbf(c):
         print(f"ERROR: output dir {out_dir} should not exist")
         sys.exit(1)
 
+    points_logger.info('Convert PBF file')
     op.convert_pbf(p, out_dir)
 
 ns.add_task(convert_pbf)
@@ -100,7 +102,6 @@ def create_roads_files(c):
     
     pkg = mp.open_package(cache_dir)
 
-    lines_logger.info('-- Convert PBF file')
     convert_pbf(c)
 
     pylib.build_lines(pkg)
@@ -116,7 +117,6 @@ def create_points_files(c):
     pkg = mp.open_package(pkg_dir)
     points_logger.info(f"Pkg dir: {pkg_dir}")
 
-    points_logger.info('Convert PBF file')
     convert_pbf(c)
     
     pylib.build_points(pkg)

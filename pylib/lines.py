@@ -226,13 +226,23 @@ def write_files(pkg, simplified_keys):
     pkg_root = Path(pkg.path).parent
     cache = FileCache(pkg_root.joinpath('data', 'cache'))
 
+    f1 = pkg_root.joinpath('data', 'residential_roads.csv')
+    f2 = pkg_root.joinpath('data', 'nonres_roads.csv')
+
+    if f1.exists() and f2.exists():
+        lines_logger.info('Both roads files exists, not writing')
+        return
+
     t = pd.concat([cache.get_df(e) for e in simplified_keys])
     t = t[['zone', 'epsg', 'us_state','cus_state', 'highway', 'geometry']]
     residential_roads = t[t.highway == 'r']
     nonres_roads = t[t.highway != 'r']
 
-    residential_roads.to_csv(pkg_root.joinpath('data', 'residential_roads.csv'), index=False)
-    nonres_roads.to_csv(pkg_root.joinpath('data', 'nonres_roads.csv'), index=False)
+    if not f1.exists():
+        residential_roads.to_csv(f1, index=False)
+
+    if not f2.exists():
+        nonres_roads.to_csv(f2, index=False)
 
 def build_lines(pkg):
 

@@ -19,6 +19,10 @@ from .lines import open_cache
 
 import logging
 
+from metapack.appurl import SearchUrl
+
+SearchUrl.initialize()  # This makes the 'index:" urls work
+
 points_logger = logging.getLogger(__name__)
 
 extract_tag_names = ['amenity', 'tourism', 'shop', 'leisure', 'natural', 'parking']
@@ -56,6 +60,8 @@ def extract_tags(df, extract_tags):
 def make_tags_df(pkg):
     """Create the tags dataframe"""
     cache = open_cache(pkg)
+
+    points_logger.info('Make tags dataframe')
 
     try:
         tags_df = cache.get_df('points/tags_df')
@@ -118,6 +124,14 @@ def make_geotags_df(pkg, tags_df, cls_df):
 
     pkg_root = Path(pkg.path).parent
 
+    f = pkg_root.joinpath('data', 'point_tags.csv')
+
+    if f.exists():
+        points_logger.info(f'Geotags dataframe {f} already exists')
+        return
+
+    points_logger.info('Make geotags dataframe')
+
     group_counts = tags_df.groupby(tags_df.geohash.str.slice(0, 8)) \
         [['amenity', 'tourism', 'shop', 'leisure', 'natural', 'parking']].count().clip(0, 10)
 
@@ -133,17 +147,17 @@ def make_geotags_df(pkg, tags_df, cls_df):
     cols = ['geohash', 'geoid'] + list(geohash_tags.loc[:, 'amenity':'supermarket'].columns) + ['geometry']
     geohash_tags = geohash_tags[cols]
 
-    geohash_tags.to_csv(pkg_root.joinpath('data', 'point_tags.csv'), index=False)
+    geohash_tags.to_csv(f, index=False)
 
     return geohash_tags
 
 
 def build_points(pkg):
-    points_logger.info('Make tags dataframe')
+
     tags_df = make_tags_df(pkg)
 
     points_logger.info('Extract class Columns')
     cls_df = extract_class_columns(tags_df)
 
-    points_logger.info('Make geotags dataframe')
+
     make_geotags_df(pkg, tags_df, cls_df)
