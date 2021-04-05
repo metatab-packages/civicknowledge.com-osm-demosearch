@@ -8,7 +8,7 @@ import geopandas as gpd
 import pandas as pd
 from auto_tqdm import tqdm
 import rowgenerators as rg
-import appnope
+
 
 from geoid.tiger import Cbsa
 from demosearch.util import run_mp
@@ -175,7 +175,11 @@ def build_block_maps(pkg):
 
     tasks = [(cache, st, grid_key, cbsa_key) for st in states]
 
-    with appnope.nope_scope():
+    try:
+        import appnope
+        with appnope.nope_scope():
+            r = run_mp(_f_block_maps, tasks)
+    except ImportError:
         r = run_mp(_f_block_maps, tasks)
 
     cbsa_map = pd.concat([cache.get(e[0]) for e in r])\
