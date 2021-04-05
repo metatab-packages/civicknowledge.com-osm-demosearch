@@ -247,24 +247,23 @@ def build_lines(pkg):
 
     cache = open_cache(pkg)
 
-    with appnope.nope_scope(): # Turn off AppNap on Macs
-        lines_logger.info('Split the input file')
-        splits = split_lines(pkg)
-        lines_logger.info(f'   {len(splits)} splits keys')
+    lines_logger.info('Split the input file')
+    splits = split_lines(pkg)
+    lines_logger.info(f'   {len(splits)} splits keys')
 
-        lines_logger.info('Run the overlay process')
-        recombine_keys = run_overlay(pkg, splits, cache)
-        print(f'   {len(recombine_keys)} recombine keys')
+    lines_logger.info('Run the overlay process')
+    recombine_keys = run_overlay(pkg, splits, cache)
+    print(f'   {len(recombine_keys)} recombine keys')
 
-        if False:
-            lines_logger.info('Simplify lines')
-            simplified_keys = simplify_lines(pkg, recombine_keys)
-            lines_logger.info(f'   {len(simplified_keys)} simplified keys')
-        else:
-            simplified_keys = recombine_keys
+    if False:
+        lines_logger.info('Simplify lines')
+        simplified_keys = simplify_lines(pkg, recombine_keys)
+        lines_logger.info(f'   {len(simplified_keys)} simplified keys')
+    else:
+        simplified_keys = recombine_keys
 
-        lines_logger.info('Write the roads files')
-        write_files(pkg, simplified_keys)
+    lines_logger.info('Write the roads files')
+    write_files(pkg, simplified_keys)
 
 
 def open_cache(pkg):

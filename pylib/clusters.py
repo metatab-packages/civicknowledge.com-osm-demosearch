@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 from auto_tqdm import tqdm
-import appnope
+
 from demosearch.util import run_mp
 from .util import get_cache
 
