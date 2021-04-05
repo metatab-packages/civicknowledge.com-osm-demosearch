@@ -14,7 +14,6 @@ from demosearch import FileCache
 from demosearch.util import run_mp
 from shapely.wkt import loads as loads_wkt
 from tqdm.notebook import tqdm
-import appnope
 
 from .util import get_cache
 

@@ -59,9 +59,10 @@ def get_pbf(c):
         dd.mkdir(parents=True )
 
     if not dd.joinpath(pbf_file).exists():
+        points_logger.info(f'Downloading {pbf_url}')
         c.run(f'curl --progress-bar -o data/{pbf_file} {pbf_url}')
     else:
-        print(f'File data/{pbf_file} already exists')
+        points_logger.info(f'File data/{pbf_file} already exists')
 
 ns.add_task(get_pbf)
 
@@ -69,9 +70,10 @@ ns.add_task(get_pbf)
 def convert_pbf(c):
     """Run the conversion of the OSM file"""
     import sys
-    
-    from demosearch.osm import OsmProcessor
-    op = OsmProcessor(None)
+
+    get_pbf(c)
+
+    op = pylib.OsmProcessor(None)
     
     p = Path.cwd().joinpath('data',pbf_file)
     out_dir = p.parent.joinpath('csv')
