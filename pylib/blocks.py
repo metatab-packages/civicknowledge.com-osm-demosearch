@@ -147,7 +147,7 @@ def _f_block_maps(cache, st, grid_key, cbsa_key):
     k1 = f'blocks/map/splits/cbsa/{st}'
     k2 = f'blocks/map/splits/utm/{st}'
 
-    if not cache.exists(k1):
+    if not cache.exists(k1) or not cache.exists(k2):
         df = cache.get(f'blocks/geo/{st}')
 
         cbsa = cache.get(cbsa_key)

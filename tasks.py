@@ -133,9 +133,8 @@ def build_osm_blocks(c):
     points_logger.info(f"Pkg dir: {pkg_dir}")
 
     pylib.build_osm_points(pkg)
+
 ns.add_task(build_osm_blocks)
-
-
 
 
 @task
