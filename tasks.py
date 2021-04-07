@@ -167,7 +167,7 @@ def build(c, force=None):
     create_points_files(c)
     build_osm_blocks(c)
     build_block_maps(c)
-
+    build_clusters(c)
     mp_build(c, force)
 
     
