@@ -116,7 +116,7 @@ def concat_osm_blocks(pkg, joins):
     cache = get_cache(pkg)
 
     parts = [cache.get(e) for e in joins]
-    df = pd.concat(parts)
+    df = pd.concat(parts).rename(columns={'geoid_left': 'geoid', 'geoid_right': 'cbsa_geoid'})
 
     cols = list(df.loc[:, 'amenity':].columns)
     block_osm = df[['geoid'] + cols].groupby('geoid').sum().reset_index()
